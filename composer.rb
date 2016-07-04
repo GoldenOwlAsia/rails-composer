@@ -1445,8 +1445,6 @@ option  Set a locale?
 choose  Enter your selection: [#{prefs[:locale]}]
 option  Install page-view analytics?
 choose  Enter your selection: [#{prefs[:analytics]}]
-option  Install Rollbar? (y/n)
-choose  Enter your selection: [#{prefs[:rollbar]}]
 option  Add a deployment mechanism?
 choose  Enter your selection: [#{prefs[:deployment]}]
 option  Set a robots.txt file to ban spiders?
@@ -1476,9 +1474,6 @@ TEXT
   Site:
   Twitter:
   Location:
-
-/* THANKS */
-  Daniel Kehoe (@rails_apps) for the RailsApps project
 
 /* SITE */
   Standards: HTML5, CSS3
@@ -2626,6 +2621,7 @@ config['pry'] = yes_wizard?("Use 'pry' as console replacement during development
 config['rubocop'] = yes_wizard?("Use 'rubocop' to ensure that your code conforms to the Ruby style guide?") if true && true unless config.key?('rubocop') || prefs.has_key?(:rubocop)
 config['rollbar'] = yes_wizard?("Install Rollbar?")
 config['new_relic'] = yes_wizard?("Install New Relic APM?")
+config['sentry'] = yes_wizard?("Install Sentry?")
 @configs[@current_recipe] = config
 # >---------------------------- recipes/extras.rb ----------------------------start<
 
@@ -2839,8 +2835,8 @@ end
 # >-------------------------------[ rollbar ]-------------------------------<
 prefs[:rollbar] = true if config['rollbar']
 if prefs[:rollbar]
-  NEW_RELIC_LICENSE_KEY = ask_wizard('Rollbar Access Token (retrieve in Rollbar account: https://rollbar.com/ACC_NAME/SITE_NAME/?')
-  if NEW_RELIC_LICENSE_KEY
+  rollbar_access_token = ask_wizard('Rollbar Access Token (retrieve in Rollbar account: https://rollbar.com/ACC_NAME/SITE_NAME/?')
+  if rollbar_access_token
     add_gem 'rollbar'
   end
 end
@@ -2849,12 +2845,12 @@ stage_two do
   say_wizard "recipe stage two"
   if prefs[:rollbar]
     # don't add the gem if it has already been added by the railsapps recipe
-    generate "rollbar #{NEW_RELIC_LICENSE_KEY}"
-    inject_into_file 'config/secrets.yml', "\n" + '  NEW_RELIC_LICENSE_KEY: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>', :after => "development:"
-    inject_into_file 'config/secrets.yml', "\n" + '  NEW_RELIC_LICENSE_KEY: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>' + " ", :after => "production:"
-    gsub_file 'config/initializers/rollbar.rb', /'#{NEW_RELIC_LICENSE_KEY}'/, "<%= ENV[\"NEW_RELIC_LICENSE_KEY\"] %>"
-    append_file '.env', "NEW_RELIC_LICENSE_KEY=#{NEW_RELIC_LICENSE_KEY}" if prefer :local_env_file, 'foreman'
-    append_file 'config/application.yml', "NEW_RELIC_LICENSE_KEY: #{NEW_RELIC_LICENSE_KEY}" if prefer :local_env_file, 'figaro'
+    generate "rollbar #{rollbar_access_token}"
+    inject_into_file 'config/secrets.yml', "\n" + '  rollbar_access_token: <%= ENV["ROLLBAR_ACCESS_TOKEN"] %>', :after => "development:"
+    inject_into_file 'config/secrets.yml', "\n" + '  rollbar_access_token: <%= ENV["ROLLBAR_ACCESS_TOKEN"] %>' + " ", :after => "production:"
+    gsub_file 'config/initializers/rollbar.rb', /'#{rollbar_access_token}'/, "ENV[\"ROLLBAR_ACCESS_TOKEN\"]"
+    append_file '.env', "ROLLBAR_ACCESS_TOKEN=#{rollbar_access_token}" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "ROLLBAR_ACCESS_TOKEN: #{rollbar_access_token}" if prefer :local_env_file, 'figaro'
     ### GIT ###
     git :add => '-A' if prefer :git, true
     git :commit => '-qm "rails_apps_composer: generate rollbar initializer"' if prefer :git, true
@@ -2886,9 +2882,27 @@ stage_two do
   end
 end
 # >-------------------------- recipes/new_relic.rb ---------------------------end<
-# >-------------------------- recipes/new_relic.rb ---------------------------start<
+# 
+# >-------------------------------[ sentry ]-------------------------------<
+prefs[:sentry] = true if config['sentry']
+if prefs[:sentry]
+  sentry_dns = ask_wizard('Sentry DNS (such as https://*****@app.getsentry.com/85449)?')
+  if sentry_dns
+    add_gem 'sentry-raven'
+  end
+end
 
-
+stage_two do
+  say_wizard "recipe stage two"
+  if prefs[:sentry]
+    append_file '.env', "SENTRY_DSN=#{sentry_dns}" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "SENTRY_DSN: #{sentry_dns}" if prefer :local_env_file, 'figaro'
+    ### GIT ###
+    git :add => '-A' if prefer :git, true
+    git :commit => '-qm "rails_apps_composer: add Sentry"' if prefer :git, true
+  end
+end
+# >-------------------------- recipes/sentry.rb ---------------------------end<
 
 # >---------------------------- recipes/extras.rb ----------------------------end<
 # >-------------------------- templates/recipe.erb ---------------------------end<
