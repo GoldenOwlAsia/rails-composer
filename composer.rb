@@ -492,6 +492,7 @@ if prefer :apps4, 'learn-rails'
   gsub_file 'Gemfile', /gem 'sqlite3'\n/, ''
   add_gem 'sqlite3', :group => :development
   add_gem 'rails_12factor', :group => :production
+  
 
   stage_three do
     say_wizard "recipe stage three"
@@ -1700,6 +1701,22 @@ add_gem 'simple_form' if prefer :form_builder, 'simple_form'
 gems.each do |g|
   add_gem(*g)
 end
+
+# custom gems
+add_gem 'binding_of_caller', group: :development
+add_gem 'rack-mini-profiler', group: :development, require: false
+add_gem 'letter_opener', group: :development
+add_gem 'annotate', group: :development
+add_gem 'bullet', group: :development
+
+add_gem 'shoulda-matchers', group: :test, require: false
+add_gem 'simplecov', group: :test
+
+add_gem 'kaminari'
+add_gem 'draper'
+add_gem 'momentjs-rails'
+add_gem 'chronic'
+add_gem 'font-awesome-rails'
 
 ## Git
 git :add => '-A' if prefer :git, true
