@@ -93,7 +93,9 @@ module Gemfile
 end
 def add_gem(*all) Gemfile.add(*all); end
 
-@recipes = ["core", "git", "railsapps", "learn_rails", "rails_bootstrap", "rails_foundation", "rails_omniauth", "rails_devise", "rails_devise_roles", "rails_devise_pundit", "rails_signup_download", "rails_mailinglist_activejob", "rails_stripe_checkout", "rails_stripe_coupons", "rails_stripe_membership_saas", "setup", "locale", "readme", "gems", "tests", "email", "devise", "omniauth", "roles", "frontend", "pages", "init", "analytics", "deployment", "extras"]
+FILES = "https://raw.github.com/GoldenOwlAsia/rails-composer/master/files/";
+
+@recipes = ["core", "git", "railsapps", "learn_rails", "rails_bootstrap", "rails_foundation", "rails_omniauth", "rails_devise", "rails_devise_roles", "rails_devise_pundit", "rails_signup_download", "rails_mailinglist_activejob", "rails_stripe_checkout", "rails_stripe_coupons", "rails_stripe_membership_saas", "setup", "locale", "readme", "gems", "tests", "email", "devise", "omniauth", "roles", "frontend", "pages", "init", "analytics", "rollbar", "deployment", "extras"]
 @prefs = {}
 @gems = []
 @diagnostics_recipes = [["example"], ["setup"], ["railsapps"], ["gems", "setup"], ["gems", "readme", "setup"], ["extras", "gems", "readme", "setup"], ["example", "git"], ["git", "setup"], ["git", "railsapps"], ["gems", "git", "setup"], ["gems", "git", "readme", "setup"], ["extras", "gems", "git", "readme", "setup"], ["email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["core", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["core", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["core", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["email", "example", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["email", "example", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["email", "example", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["apps4", "core", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["apps4", "core", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "tests"], ["apps4", "core", "deployment", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "testing"], ["apps4", "core", "deployment", "email", "extras", "frontend", "gems", "git", "init", "railsapps", "readme", "setup", "tests"], ["apps4", "core", "deployment", "devise", "email", "extras", "frontend", "gems", "git", "init", "omniauth", "pundit", "railsapps", "readme", "setup", "tests"]]
@@ -169,7 +171,7 @@ def copy_from(source, destination)
 end
 
 def copy_from_repo(filename, opts = {})
-  repo = 'https://raw.github.com/RailsApps/rails-composer/master/files/'
+  repo = FILES
   repo = opts[:repo] unless opts[:repo].nil?
   if (!opts[:prefs].nil?) && (!prefs.has_value? opts[:prefs])
     return
@@ -322,7 +324,7 @@ say_recipe 'git'
 say_wizard "initialize git"
 prefs[:git] = true unless prefs.has_key? :git
 if prefer :git, true
-  copy_from 'https://raw.github.com/RailsApps/rails-composer/master/files/gitignore.txt', '.gitignore'
+  copy_from FILES + 'gitignore.txt', '.gitignore'
   git :init
   git :add => '-A'
   git :commit => '-qm "rails_apps_composer: initial commit"'
@@ -1443,6 +1445,8 @@ option  Set a locale?
 choose  Enter your selection: [#{prefs[:locale]}]
 option  Install page-view analytics?
 choose  Enter your selection: [#{prefs[:analytics]}]
+option  Install Rollbar? (y/n)
+choose  Enter your selection: [#{prefs[:rollbar]}]
 option  Add a deployment mechanism?
 choose  Enter your selection: [#{prefs[:deployment]}]
 option  Set a robots.txt file to ban spiders?
@@ -2391,6 +2395,7 @@ end
 say_recipe 'analytics'
 @configs[@current_recipe] = config
 # >-------------------------- recipes/analytics.rb ---------------------------start<
+# 
 
 # Application template recipe for the rails_apps_composer. Change the recipe here:
 # https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/analytics.rb
@@ -2619,6 +2624,8 @@ config['quiet_assets'] = yes_wizard?("Reduce assets logger noise during developm
 config['better_errors'] = yes_wizard?("Improve error reporting with 'better_errors' during development?") if true && true unless config.key?('better_errors') || prefs.has_key?(:better_errors)
 config['pry'] = yes_wizard?("Use 'pry' as console replacement during development and test?") if true && true unless config.key?('pry') || prefs.has_key?(:pry)
 config['rubocop'] = yes_wizard?("Use 'rubocop' to ensure that your code conforms to the Ruby style guide?") if true && true unless config.key?('rubocop') || prefs.has_key?(:rubocop)
+config['rollbar'] = yes_wizard?("Install Rollbar?")
+config['new_relic'] = yes_wizard?("Install New Relic APM?")
 @configs[@current_recipe] = config
 # >---------------------------- recipes/extras.rb ----------------------------start<
 
@@ -2828,6 +2835,61 @@ if prefs[:github]
     end
   end
 end
+
+# >-------------------------------[ rollbar ]-------------------------------<
+prefs[:rollbar] = true if config['rollbar']
+if prefs[:rollbar]
+  NEW_RELIC_LICENSE_KEY = ask_wizard('Rollbar Access Token (retrieve in Rollbar account: https://rollbar.com/ACC_NAME/SITE_NAME/?')
+  if NEW_RELIC_LICENSE_KEY
+    add_gem 'rollbar'
+  end
+end
+
+stage_two do
+  say_wizard "recipe stage two"
+  if prefs[:rollbar]
+    # don't add the gem if it has already been added by the railsapps recipe
+    generate "rollbar #{NEW_RELIC_LICENSE_KEY}"
+    inject_into_file 'config/secrets.yml', "\n" + '  NEW_RELIC_LICENSE_KEY: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>', :after => "development:"
+    inject_into_file 'config/secrets.yml', "\n" + '  NEW_RELIC_LICENSE_KEY: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>' + " ", :after => "production:"
+    gsub_file 'config/initializers/rollbar.rb', /'#{NEW_RELIC_LICENSE_KEY}'/, "<%= ENV[\"NEW_RELIC_LICENSE_KEY\"] %>"
+    append_file '.env', "NEW_RELIC_LICENSE_KEY=#{NEW_RELIC_LICENSE_KEY}" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "NEW_RELIC_LICENSE_KEY: #{NEW_RELIC_LICENSE_KEY}" if prefer :local_env_file, 'figaro'
+    ### GIT ###
+    git :add => '-A' if prefer :git, true
+    git :commit => '-qm "rails_apps_composer: generate rollbar initializer"' if prefer :git, true
+  end
+end
+# >-------------------------------[ new_relic ]-------------------------------<
+prefs[:new_relic] = true if config['new_relic']
+if prefs[:new_relic]
+  new_relic_license_key = ask_wizard('New Relic License Key (retrieve in New Relic APM account settings: https://rpm.newrelic.com/accounts/ACC_NUMBER)?')
+  if new_relic_license_key
+    add_gem 'newrelic_rpm'
+  end
+end
+
+stage_two do
+  say_wizard "recipe stage two"
+  if prefs[:new_relic]
+    # don't add the gem if it has already been added by the railsapps recipe
+    copy_from_repo 'config/newrelic.yml'
+    inject_into_file 'config/secrets.yml', "\n" + '  new_relic_license_key: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>', :after => "development:"
+    inject_into_file 'config/secrets.yml', "\n" + '  new_relic_license_key: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>' + " ", :after => "production:"
+    gsub_file 'config/newrelic.yml', /LICENSE_KEY/, "<%= ENV[\"NEW_RELIC_LICENSE_KEY\"] %>"
+    gsub_file 'config/newrelic.yml', /APP_NAME/, app_name.humanize.titleize
+    append_file '.env', "NEW_RELIC_LICENSE_KEY=#{new_relic_license_key}" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "NEW_RELIC_LICENSE_KEY: #{new_relic_license_key}" if prefer :local_env_file, 'figaro'
+    ### GIT ###
+    git :add => '-A' if prefer :git, true
+    git :commit => '-qm "rails_apps_composer: add New Relic"' if prefer :git, true
+  end
+end
+# >-------------------------- recipes/new_relic.rb ---------------------------end<
+# >-------------------------- recipes/new_relic.rb ---------------------------start<
+
+
+
 # >---------------------------- recipes/extras.rb ----------------------------end<
 # >-------------------------- templates/recipe.erb ---------------------------end<
 
