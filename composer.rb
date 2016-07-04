@@ -1221,7 +1221,7 @@ if recipes.include? 'tests'
     ["RSpec with Capybara", "rspec"]] unless prefs.has_key? :tests
   case prefs[:tests]
     when 'rspec'
-      say_wizard "Adding DatabaseCleaner, FactoryGirl, Faker, Launchy, Selenium"
+      say_wizard "Adding DatabaseCleaner, FactoryGirl, Faker, Launchy, Selenium, Sounda-matchers, SimpleCov"
       prefs[:continuous_testing] = multiple_choice "Continuous testing?", [["None", "none"], ["Guard", "guard"]] unless prefs.has_key? :continuous_testing
     end
 end
@@ -1629,6 +1629,8 @@ if prefer :tests, 'rspec'
   add_gem 'database_cleaner', :group => :test
   add_gem 'launchy', :group => :test
   add_gem 'selenium-webdriver', :group => :test
+  add_gem 'shoulda-matchers', :group => :test
+  add_gem 'simplecov', :group => :test, require: false
   if prefer :continuous_testing, 'guard'
     add_gem 'guard-bundler', :group => :development
     add_gem 'guard-rails', :group => :development
@@ -1680,7 +1682,10 @@ end
 
 ## Administratative Interface
 add_gem 'upmin-admin' if prefer :dashboard, 'upmin'
-add_gem 'administrate' if prefer :dashboard, 'administrate'
+if prefer :dashboard, 'administrate'
+  add_gem 'bourbon'
+  add_gem 'administrate'
+end
 
 ## Authentication (OmniAuth)
 add_gem 'omniauth' if prefer :authentication, 'omniauth'
@@ -1709,14 +1714,16 @@ add_gem 'letter_opener', group: :development
 add_gem 'annotate', group: :development
 add_gem 'bullet', group: :development
 
-add_gem 'shoulda-matchers', group: :test, require: false
-add_gem 'simplecov', group: :test
-
 add_gem 'kaminari'
 add_gem 'draper'
 add_gem 'momentjs-rails'
 add_gem 'chronic'
 add_gem 'font-awesome-rails'
+stage_three do
+  say_wizard "recipe stage three"
+  inject_into_file 'app/assets/stylesheets/application.css.scss', " *= require font-awesome\n", before: ' *= require_self'
+  inject_into_file 'app/assets/javascripts/application.js', "//= require moment\n", before: '//= require_tree .'
+end
 
 ## Git
 git :add => '-A' if prefer :git, true
@@ -1907,6 +1914,11 @@ stage_three do
     unless %w(users about+users).include?(prefs[:pages])
       remove_file 'spec/features/users/user_index_spec.rb'
       remove_file 'spec/features/users/user_show_spec.rb'
+    end
+
+    if prefer :tests, 'rspec'
+      inject_into_file 'spec/spec_helper.rb', "require 'simplecov'\n", before: 'RSpec.configure do |config|'
+      inject_into_file 'spec/spec_helper.rb', "SimpleCov.start 'rails'\n", before: 'RSpec.configure do |config|'
     end
   end
 end
@@ -2866,8 +2878,8 @@ stage_two do
     inject_into_file 'config/secrets.yml', "\n" + '  rollbar_access_token: <%= ENV["ROLLBAR_ACCESS_TOKEN"] %>', :after => "development:"
     inject_into_file 'config/secrets.yml', "\n" + '  rollbar_access_token: <%= ENV["ROLLBAR_ACCESS_TOKEN"] %>' + " ", :after => "production:"
     gsub_file 'config/initializers/rollbar.rb', /'#{rollbar_access_token}'/, "ENV[\"ROLLBAR_ACCESS_TOKEN\"]"
-    append_file '.env', "ROLLBAR_ACCESS_TOKEN=#{rollbar_access_token}" if prefer :local_env_file, 'foreman'
-    append_file 'config/application.yml', "ROLLBAR_ACCESS_TOKEN: #{rollbar_access_token}" if prefer :local_env_file, 'figaro'
+    append_file '.env', "ROLLBAR_ACCESS_TOKEN=#{rollbar_access_token}\n" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "ROLLBAR_ACCESS_TOKEN: #{rollbar_access_token}\n" if prefer :local_env_file, 'figaro'
     ### GIT ###
     git :add => '-A' if prefer :git, true
     git :commit => '-qm "rails_apps_composer: generate rollbar initializer"' if prefer :git, true
@@ -2891,8 +2903,8 @@ stage_two do
     inject_into_file 'config/secrets.yml', "\n" + '  new_relic_license_key: <%= ENV["NEW_RELIC_LICENSE_KEY"] %>' + " ", :after => "production:"
     gsub_file 'config/newrelic.yml', /LICENSE_KEY/, "<%= ENV[\"NEW_RELIC_LICENSE_KEY\"] %>"
     gsub_file 'config/newrelic.yml', /APP_NAME/, app_name.humanize.titleize
-    append_file '.env', "NEW_RELIC_LICENSE_KEY=#{new_relic_license_key}" if prefer :local_env_file, 'foreman'
-    append_file 'config/application.yml', "NEW_RELIC_LICENSE_KEY: #{new_relic_license_key}" if prefer :local_env_file, 'figaro'
+    append_file '.env', "NEW_RELIC_LICENSE_KEY=#{new_relic_license_key}\n" if prefer :local_env_file, 'foreman'
+    append_file 'config/application.yml', "NEW_RELIC_LICENSE_KEY: #{new_relic_license_key}\n" if prefer :local_env_file, 'figaro'
     ### GIT ###
     git :add => '-A' if prefer :git, true
     git :commit => '-qm "rails_apps_composer: add New Relic"' if prefer :git, true
@@ -2913,12 +2925,33 @@ stage_two do
   say_wizard "recipe stage two"
   if prefs[:sentry]
     append_file '.env', "SENTRY_DSN=#{sentry_dns}" if prefer :local_env_file, 'foreman'
-    append_file 'config/application.yml', "SENTRY_DSN: #{sentry_dns}" if prefer :local_env_file, 'figaro'
+    append_file 'config/application.yml', "SENTRY_DSN: #{sentry_dns}\n" if prefer :local_env_file, 'figaro'
     ### GIT ###
     git :add => '-A' if prefer :git, true
     git :commit => '-qm "rails_apps_composer: add Sentry"' if prefer :git, true
   end
 end
+
+stage_two do
+  say_wizard "recipe stage two"
+
+  inject_into_file 'config/environments/development.rb', after: 'config.assets.raise_runtime_errors = true' do <<-'RUBY'
+
+      Bullet.enable = true
+      Bullet.alert = false
+      Bullet.bullet_logger = true
+      Bullet.console = true
+      Bullet.growl = false
+      Bullet.rails_logger = true
+      Bullet.honeybadger = false
+      Bullet.bugsnag = false
+      Bullet.airbrake = false
+      Bullet.rollbar = false
+      Bullet.add_footer = true
+    RUBY
+  end
+end
+
 # >-------------------------- recipes/sentry.rb ---------------------------end<
 
 # >---------------------------- recipes/extras.rb ----------------------------end<
