@@ -367,18 +367,21 @@ when "5"
   case prefs[:apps4]
     when 'railsapps'
         prefs[:apps4] = multiple_choice "Choose a starter application.",
-        [["learn-rails", "learn-rails"],
-        ["rails-bootstrap", "rails-bootstrap"],
-        ["rails-foundation", "rails-foundation"],
-        ["rails-mailinglist-activejob", "rails-mailinglist-activejob"],
-        ["rails-omniauth", "rails-omniauth"],
-        ["rails-devise", "rails-devise"],
-        ["rails-devise-roles", "rails-devise-roles"],
-        ["rails-devise-pundit", "rails-devise-pundit"],
-        ["rails-signup-download", "rails-signup-download"],
-        ["rails-stripe-checkout", "rails-stripe-checkout"],
-        ["rails-stripe-coupons", "rails-stripe-coupons"],
-        ["rails-stripe-membership-saas", "rails-stripe-membership-saas"]]
+        [
+          ["Golden Owl starter", "go-starter"],
+          ["learn-rails", "learn-rails"],
+          ["rails-bootstrap", "rails-bootstrap"],
+          ["rails-foundation", "rails-foundation"],
+          ["rails-mailinglist-activejob", "rails-mailinglist-activejob"],
+          ["rails-omniauth", "rails-omniauth"],
+          ["rails-devise", "rails-devise"],
+          ["rails-devise-roles", "rails-devise-roles"],
+          ["rails-devise-pundit", "rails-devise-pundit"],
+          ["rails-signup-download", "rails-signup-download"],
+          ["rails-stripe-checkout", "rails-stripe-checkout"],
+          ["rails-stripe-coupons", "rails-stripe-coupons"],
+          ["rails-stripe-membership-saas", "rails-stripe-membership-saas"]
+        ]
     when 'contributed_app'
       prefs[:apps4] = multiple_choice "No contributed applications are available.",
         [["create custom application", "railsapps"]]
@@ -399,27 +402,33 @@ when "4"
         case Rails::VERSION::MINOR.to_s
         when "2"
           prefs[:apps4] = multiple_choice "Choose a starter application.",
-          [["learn-rails", "learn-rails"],
-          ["rails-bootstrap", "rails-bootstrap"],
-          ["rails-foundation", "rails-foundation"],
-          ["rails-mailinglist-activejob", "rails-mailinglist-activejob"],
-          ["rails-omniauth", "rails-omniauth"],
-          ["rails-devise", "rails-devise"],
-          ["rails-devise-roles", "rails-devise-roles"],
-          ["rails-devise-pundit", "rails-devise-pundit"],
-          ["rails-signup-download", "rails-signup-download"],
-          ["rails-stripe-checkout", "rails-stripe-checkout"],
-          ["rails-stripe-coupons", "rails-stripe-coupons"],
-          ["rails-stripe-membership-saas", "rails-stripe-membership-saas"]]
+          [
+            ["Golden Owl starter", "go-starter"],
+            ["learn-rails", "learn-rails"],
+            ["rails-bootstrap", "rails-bootstrap"],
+            ["rails-foundation", "rails-foundation"],
+            ["rails-mailinglist-activejob", "rails-mailinglist-activejob"],
+            ["rails-omniauth", "rails-omniauth"],
+            ["rails-devise", "rails-devise"],
+            ["rails-devise-roles", "rails-devise-roles"],
+            ["rails-devise-pundit", "rails-devise-pundit"],
+            ["rails-signup-download", "rails-signup-download"],
+            ["rails-stripe-checkout", "rails-stripe-checkout"],
+            ["rails-stripe-coupons", "rails-stripe-coupons"],
+            ["rails-stripe-membership-saas", "rails-stripe-membership-saas"]
+          ]
         else
           prefs[:apps4] = multiple_choice "Upgrade to Rails 4.2 for more choices.",
-          [["learn-rails", "learn-rails"],
-          ["rails-bootstrap", "rails-bootstrap"],
-          ["rails-foundation", "rails-foundation"],
-          ["rails-omniauth", "rails-omniauth"],
-          ["rails-devise", "rails-devise"],
-          ["rails-devise-roles", "rails-devise-roles"],
-          ["rails-devise-pundit", "rails-devise-pundit"]]
+          [
+            ["Golden Owl starter", "go-starter"],
+            ["learn-rails", "learn-rails"],
+            ["rails-bootstrap", "rails-bootstrap"],
+            ["rails-foundation", "rails-foundation"],
+            ["rails-omniauth", "rails-omniauth"],
+            ["rails-devise", "rails-devise"],
+            ["rails-devise-roles", "rails-devise-roles"],
+            ["rails-devise-pundit", "rails-devise-pundit"]
+          ]
         end
       when 'contributed_app'
         prefs[:apps4] = multiple_choice "No contributed applications are available.",
@@ -1178,6 +1187,115 @@ end
 # >-------------------------- templates/recipe.erb ---------------------------end<
 
 # >-------------------------- templates/recipe.erb ---------------------------start<
+# >---------------------[ go-starter ]----------------------<
+@current_recipe = "go-starter"
+@before_configs["go-starter"].call if @before_configs["go-starter"]
+say_recipe 'go-starter'
+@configs[@current_recipe] = config
+# >----------------- recipes/go-starter.rb -----------------start<
+
+# Application template recipe for the rails_apps_composer. Change the recipe here:
+# https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/go-starter.rb
+
+if prefer :apps4, 'go-starter'
+  prefs[:dev_webserver] = 'unicorn'
+  prefs[:prod_webserver] = 'unicorn'
+  prefs[:database] = 'postgresql'
+  prefs[:templates] = 'slim'
+  prefs[:tests] = 'rspec'
+  prefs[:continuous_testing] = 'guard'
+  prefs[:frontend] = 'bootstrap3'
+  prefs[:email] = 'sendgrid'
+  prefs[:authentication] = 'devise'
+  prefs[:authorization] = 'roles'
+  prefs[:better_errors] = true
+  prefs[:devise_modules] = 'invitable'
+  prefs[:form_builder] = 'simple_form'
+  prefs[:analytics] = 'ga'
+  prefs[:git] = true
+  prefs[:local_env_file] = 'figaro'
+  prefs[:deployment] = 'heroku'
+  prefs[:dashboard] = 'active_admin'
+  prefs[:pry] = true
+  prefs[:quiet_assets] = true
+  prefs[:disable_turbolinks] = true
+  prefs[:secrets] = ['product_price',
+    'product_title',
+    'stripe_publishable_key',
+    'stripe_api_key',
+    'mailchimp_list_id',
+    'mailchimp_api_key']
+  prefs[:pages] = 'about'
+  prefs[:locale] = 'none'
+  prefs[:rubocop] = true
+  prefs[:ban_spiders] = true
+  prefs[:rollbar] = true
+  prefs[:new_relic] = true
+  prefs[:sentry] = true
+
+  # gems
+  add_gem 'gibbon'
+  add_gem 'stripe'
+  add_gem 'sucker_punch'
+
+  stage_three do
+    say_wizard "recipe stage three"
+    repo = 'https://raw.github.com/RailsApps/rails-stripe-checkout/master/'
+
+    # >-------------------------------[ Config ]---------------------------------<
+
+    copy_from_repo 'config/initializers/active_job.rb', :repo => repo
+    copy_from_repo 'config/initializers/devise_permitted_parameters.rb', :repo => repo
+    copy_from_repo 'config/initializers/stripe.rb', :repo => repo
+
+    # >-------------------------------[ Assets ]--------------------------------<
+
+    copy_from_repo 'app/assets/images/rubyonrails.png', :repo => repo
+
+    # >-------------------------------[ Models ]--------------------------------<
+
+    copy_from_repo 'app/models/user.rb', :repo => repo
+
+    # >-------------------------------[ Controllers ]--------------------------------<
+
+    copy_from_repo 'app/controllers/visitors_controller.rb', :repo => repo
+    copy_from_repo 'app/controllers/products_controller.rb', :repo => repo
+    copy_from_repo 'app/controllers/registrations_controller.rb', :repo => repo
+
+    # >-------------------------------[ Jobs ]---------------------------------<
+
+    copy_from_repo 'app/jobs/mailing_list_signup_job.rb', :repo => repo
+
+    # >-------------------------------[ Views ]--------------------------------<
+
+    copy_from_repo 'app/views/devise/registrations/new.html.erb', :repo => repo
+    copy_from_repo 'app/views/visitors/_purchase.html.erb', :repo => repo
+    copy_from_repo 'app/views/visitors/index.html.erb', :repo => repo
+    copy_from_repo 'app/views/products/product.pdf', :repo => repo
+
+    # >-------------------------------[ Routes ]--------------------------------<
+
+    # copy_from_repo 'config/routes.rb', :repo => repo
+    inject_into_file 'config/routes.rb', ', :controllers => { :registrations => "registrations" }', after: 'devise_for :users'
+    inject_into_file 'config/routes.rb', after: 'devise_for :users, :controllers => { :registrations => "registrations" }' do <<-'RUBY'
+
+  get 'products/:id', to: 'products#show', :as => :products
+  devise_scope :user do
+    post 'pay', to: 'registrations#pay'
+  end
+  resources :users
+RUBY
+    end
+
+    # >-------------------------------[ Tests ]--------------------------------<
+
+    ### tests not implemented
+
+  end
+end
+# >----------------- recipes/go-starter.rb -----------------end<
+
+# >-------------------------- templates/recipe.erb ---------------------------start<
 # >---------------------------------[ setup ]---------------------------------<
 @current_recipe = "setup"
 @before_configs["setup"].call if @before_configs["setup"]
@@ -1261,7 +1379,7 @@ if (recipes.include? 'devise') || (recipes.include? 'omniauth')
   if prefer :authentication, 'devise'
     if (prefer :authorization, 'roles') || (prefer :authorization, 'pundit')
       prefs[:dashboard] = multiple_choice "Admin interface for database?", [["None", "none"],
-        ["Thoughtbot Administrate", "administrate"], ["Upmin", "upmin"]] unless prefs.has_key? :dashboard
+        ["Thoughtbot Administrate", "administrate"], ["Upmin", "upmin"], ['Active Admin', 'active_admin']] unless prefs.has_key? :dashboard
     end
   end
 end
@@ -1686,6 +1804,10 @@ if prefer :dashboard, 'administrate'
   add_gem 'bourbon'
   add_gem 'administrate'
 end
+if prefer :dashboard, 'active_admin'
+  add_gem 'activeadmin', github: 'activeadmin'
+  add_gem 'active_skin'
+end
 
 ## Authentication (OmniAuth)
 add_gem 'omniauth' if prefer :authentication, 'omniauth'
@@ -2017,6 +2139,12 @@ stage_two do
       gsub_file 'app/models/user.rb', /:registerable,/, ":registerable, :confirmable,"
       generate 'migration AddConfirmableToUsers confirmation_token:string confirmed_at:datetime confirmation_sent_at:datetime unconfirmed_email:string'
     end
+
+    generate 'active_admin:install --skip-users' if prefer :dashboard, 'active_admin'
+    if prefer :dashboard, 'active_admin'
+      generate 'active_admin:resource User'
+    end
+
     run 'bundle exec rake db:migrate'
   end
   ### GIT ###
@@ -2395,6 +2523,11 @@ FILE
         generate 'layout:devise foundation5 -f'
     end
   end
+
+  if prefer :dashboard, 'active_admin'
+    inject_into_file 'app/assets/stylesheets/active_admin.scss', "@import \"active_skin\";\n", after: '@import "active_admin/base";'
+  end
+
   # create navigation links using the rails_layout gem
   generate 'layout:navigation -f'
   if prefer :apps4, 'rails-stripe-coupons'
@@ -2648,9 +2781,9 @@ config['quiet_assets'] = yes_wizard?("Reduce assets logger noise during developm
 config['better_errors'] = yes_wizard?("Improve error reporting with 'better_errors' during development?") if true && true unless config.key?('better_errors') || prefs.has_key?(:better_errors)
 config['pry'] = yes_wizard?("Use 'pry' as console replacement during development and test?") if true && true unless config.key?('pry') || prefs.has_key?(:pry)
 config['rubocop'] = yes_wizard?("Use 'rubocop' to ensure that your code conforms to the Ruby style guide?") if true && true unless config.key?('rubocop') || prefs.has_key?(:rubocop)
-config['rollbar'] = yes_wizard?("Install Rollbar?")
-config['new_relic'] = yes_wizard?("Install New Relic APM?")
-config['sentry'] = yes_wizard?("Install Sentry?")
+config['rollbar'] = yes_wizard?("Install Rollbar?") if true && true unless config.key?('rollbar') || prefs.has_key?(:rollbar)
+config['new_relic'] = yes_wizard?("Install New Relic APM?") if true && true unless config.key?('new_relic') || prefs.has_key?(:new_relic)
+config['sentry'] = yes_wizard?("Install Sentry?") if true && true unless config.key?('sentry') || prefs.has_key?(:sentry)
 @configs[@current_recipe] = config
 # >---------------------------- recipes/extras.rb ----------------------------start<
 
