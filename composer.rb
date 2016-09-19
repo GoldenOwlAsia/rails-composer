@@ -501,7 +501,7 @@ if prefer :apps4, 'learn-rails'
   gsub_file 'Gemfile', /gem 'sqlite3'\n/, ''
   add_gem 'sqlite3', :group => :development
   add_gem 'rails_12factor', :group => :production
-  
+
 
   stage_three do
     say_wizard "recipe stage three"
@@ -1749,6 +1749,7 @@ if prefer :tests, 'rspec'
   add_gem 'selenium-webdriver', :group => :test
   add_gem 'shoulda-matchers', :group => :test
   add_gem 'simplecov', :group => :test, require: false
+  add_gem 'simplecov-json', :require => false, :group => :test
   if prefer :continuous_testing, 'guard'
     add_gem 'guard-bundler', :group => :development
     add_gem 'guard-rails', :group => :development
@@ -2041,6 +2042,8 @@ stage_three do
     if prefer :tests, 'rspec'
       inject_into_file 'spec/spec_helper.rb', "require 'simplecov'\n", before: 'RSpec.configure do |config|'
       inject_into_file 'spec/spec_helper.rb', "SimpleCov.start 'rails'\n", before: 'RSpec.configure do |config|'
+      inject_into_file 'spec/spec_helper.rb', "require 'simplecov-json'\n", before: 'RSpec.configure do |config|'
+      inject_into_file 'spec/spec_helper.rb', "SimpleCov.formatter = SimpleCov::Formatter::JSONFormatter\n", before: 'RSpec.configure do |config|'
     end
   end
 end
@@ -2552,7 +2555,7 @@ end
 say_recipe 'analytics'
 @configs[@current_recipe] = config
 # >-------------------------- recipes/analytics.rb ---------------------------start<
-# 
+#
 
 # Application template recipe for the rails_apps_composer. Change the recipe here:
 # https://github.com/RailsApps/rails_apps_composer/blob/master/recipes/analytics.rb
@@ -3044,7 +3047,7 @@ stage_two do
   end
 end
 # >-------------------------- recipes/new_relic.rb ---------------------------end<
-# 
+#
 # >-------------------------------[ sentry ]-------------------------------<
 prefs[:sentry] = true if config['sentry']
 if prefs[:sentry]
